@@ -1,0 +1,82 @@
+version: '3'
+services:
+  test_hadetha:
+      build:
+          context: ./docker
+          dockerfile: Dockerfile
+          args:
+              WWWGROUP: '${WWWGROUP}'
+      extra_hosts:
+          - 'host.docker.internal:host-gateway'
+      ports:
+        - '8001:80'
+
+      environment:
+          WWWUSER: '${WWWUSER}'
+      volumes:
+          - '.:/var/www/html'
+      networks:
+          - test_hadetha
+
+
+  db:
+      image: 'mysql/mysql-server:8.0'
+      ports:
+          - '3301:3306'
+      environment:
+          MYSQL_ROOT_PASSWORD: 'root'
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: 'test_hadetha'
+          MYSQL_USER: 'web'
+          MYSQL_PASSWORD: 'web'
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      volumes:
+          - 'db-data:/var/lib/mysql'
+      networks:
+          - test_hadetha
+
+
+#   redis:
+#       image: redis:7.0.2-alpine
+#       restart: always
+#       ports:
+#         - '6379:6379'
+#       environment:
+#         - ALLOW_EMPTY_PASSWORD=yes
+#       command: redis-server --save 20 1 --loglevel warning
+#       volumes:
+#         - redis_cache:/data
+#       networks:
+#           - test_hadetha
+
+  phpmyadmin:
+    image:  phpmyadmin/phpmyadmin
+    ports:
+      - 8081:80
+    links:
+      - db
+    environment:
+      - PMA_HOST=db
+    networks:
+      - test_hadetha
+
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - 8888:8888
+
+  # adminer:
+  #   image: adminer:latest
+  #   environment:
+  #     ADMINER_DEFAULT_SERVER: mysql_db_container
+  #   ports:
+  #     - 8080:8080
+
+volumes:
+  db-data:
+  redis_cache:
+
+networks:
+    test_hadetha:
+        driver: bridge
